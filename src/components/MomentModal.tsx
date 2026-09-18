@@ -27,6 +27,7 @@ import {
   Square,
   Volume2,
   Check,
+  Loader2,
 } from 'lucide-react';
 
 interface MomentModalProps {
@@ -317,6 +318,46 @@ export const MomentModal: React.FC<MomentModalProps> = ({
 
   const currentCityName = resolvedCity?.name || newCityName || 'Lugar del viaje';
   const currentCountryName = resolvedCountry?.name || newCountryName || 'Mundo';
+
+  // AI Suggestion state & handler (Gemini Server-Side)
+  const [isAiGenerating, setIsAiGenerating] = useState<boolean>(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const handleAiSuggest = async () => {
+    if (!mediaUrl || isAiGenerating) return;
+    setIsAiGenerating(true);
+    setAiError(null);
+
+    try {
+      const response = await fetch('/api/gemini/suggest-moment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mediaUrl,
+          currentPhrase: phrase,
+          cityName: currentCityName,
+          countryName: currentCountryName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.phrase && typeof data.phrase === 'string') {
+        setPhrase(data.phrase);
+      }
+      if (data.note && typeof data.note === 'string') {
+        setNote(data.note);
+      }
+    } catch (err) {
+      console.warn('Silent Gemini suggestion error:', err);
+      setAiError('No se pudo generar la sugerencia. Puedes escribirla tú mismo.');
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -802,8 +843,92 @@ export const MomentModal: React.FC<MomentModalProps> = ({
             )}
           </div>
 
-          {/* Si no es nota pura, se puede añadir una nota/frase acompañante */}
-          {mediaType !== 'note' && (
+          {/* SECCIÓN TEXTUAL PARA FOTOS: Frase con botón Sugerir con IA + Descripción / Nota */}
+          {mediaType === 'photo' && (
+            <div className="flex flex-col gap-3.5 p-4 rounded-2xl bg-[#1c1611] border border-[#3e3126]">
+              {/* Frase corta con botón Sugerir con IA */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <label
+                    htmlFor="input-moment-phrase"
+                    className="text-xs uppercase font-editorial font-bold text-[#e5ba79] tracking-wider flex items-center gap-1.5"
+                  >
+                    <span>Frase del instante</span>
+                    <span className="text-[10px] text-stone-400 font-mono font-normal">
+                      ({phrase.length}/60)
+                    </span>
+                  </label>
+
+                  {/* Botón Sugerir con IA */}
+                  <button
+                    id="btn-ai-suggest-phrase"
+                    type="button"
+                    onClick={handleAiSuggest}
+                    disabled={isAiGenerating || !mediaUrl}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-editorial font-bold transition-all border ${
+                      isAiGenerating
+                        ? 'bg-amber-950/60 border-amber-800 text-amber-300 cursor-wait'
+                        : 'bg-gradient-to-r from-[#d97706] to-[#b45309] hover:from-[#f59e0b] hover:to-[#d97706] text-[#24170c] border-[#fde68a] shadow-sm hover:scale-105 active:scale-95 disabled:opacity-40 disabled:pointer-events-none'
+                    }`}
+                    title="Sugerir frase y nota evocadora con IA a partir de esta foto"
+                  >
+                    {isAiGenerating ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#24170c]" />
+                        <span>Generando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 fill-[#24170c]" />
+                        <span>Sugerir con IA</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <input
+                  id="input-moment-phrase"
+                  type="text"
+                  maxLength={60}
+                  value={phrase}
+                  onChange={(e) => {
+                    setPhrase(e.target.value);
+                    if (aiError) setAiError(null);
+                  }}
+                  placeholder="«La luz dorada de la tarde sobre los tejados...»"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#14100c] border border-[#3e3126] text-sm text-stone-100 placeholder:text-stone-500 font-serif-body italic focus:outline-none focus:border-[#d69542]"
+                />
+
+                {aiError && (
+                  <p className="text-xs font-serif-body text-amber-300/90 italic animate-fadeIn">
+                    {aiError}
+                  </p>
+                )}
+              </div>
+
+              {/* Descripción breve / nota íntima (editable en todo momento) */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="input-moment-note"
+                  className="text-xs uppercase font-editorial font-bold text-[#e5ba79] tracking-wider flex items-center justify-between"
+                >
+                  <span>Descripción íntima o recuerdo</span>
+                  <span className="text-[11px] text-stone-400 font-normal italic">1-2 frases</span>
+                </label>
+                <textarea
+                  id="input-moment-note"
+                  rows={2}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Describe lo que sentías, la atmósfera, la compañía o los sonidos de ese momento..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#14100c] border border-[#3e3126] text-sm text-amber-100 placeholder:text-stone-500 font-serif-body italic leading-relaxed focus:outline-none focus:border-[#d69542]"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Si es vídeo o audio, se puede añadir una nota/frase acompañante */}
+          {mediaType !== 'note' && mediaType !== 'photo' && (
             <div className="flex flex-col gap-1.5">
               <label className="text-xs uppercase font-editorial font-bold text-[#e5ba79] tracking-wider flex items-center justify-between">
                 <span>Nota o pensamiento sobre este instante</span>
