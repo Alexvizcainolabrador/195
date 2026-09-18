@@ -1,0 +1,106 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Health check / connection test document
+    match /test/{docId} {
+      allow get: if true;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidCountry(data) {
+      return data.userId is string && data.userId == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && (data.coverPhoto is string && data.coverPhoto.size() <= 204800)
+        && (data.firstVisitDate is string && data.firstVisitDate.size() <= 50)
+        && (data.visitCount is number && data.visitCount >= 0);
+    }
+
+    function isValidCity(data) {
+      return data.userId is string && data.userId == request.auth.uid
+        && data.countryId is string && data.countryId.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && (data.coverPhoto is string && data.coverPhoto.size() <= 204800)
+        && (data.visitDate is string && data.visitDate.size() <= 50);
+    }
+
+    function isValidPlace(data) {
+      return data.userId is string && data.userId == request.auth.uid
+        && data.countryId is string && data.countryId.size() <= 128
+        && data.cityId is string && data.cityId.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 150
+        && (data.category is string && data.category.size() <= 50)
+        && (data.worthReturning is bool);
+    }
+
+    function isValidSnapshot(data) {
+      return data.userId is string && data.userId == request.auth.uid
+        && data.countryId is string && data.countryId.size() <= 128
+        && data.cityId is string && data.cityId.size() <= 128
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 150
+        && (data.photoUrl is string && data.photoUrl.size() <= 300000)
+        && (data.note is string && data.note.size() <= 4000)
+        && (data.date is string && data.date.size() <= 50)
+        && (data.people is list && data.people.size() <= 20);
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+      allow delete: if false;
+    }
+
+    // Countries collection
+    match /countries/{countryId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidCountry(request.resource.data);
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && isValidCountry(request.resource.data);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Cities collection
+    match /cities/{cityId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidCity(request.resource.data);
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && isValidCity(request.resource.data);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Places collection
+    match /places/{placeId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidPlace(request.resource.data);
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && isValidPlace(request.resource.data);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Snapshots collection
+    match /snapshots/{snapshotId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidSnapshot(request.resource.data);
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && isValidSnapshot(request.resource.data);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

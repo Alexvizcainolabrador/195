@@ -1,0 +1,6 @@
+{
+  "name": "Momentos",
+  "description": "Marca dónde fuiste. Guarda lo que viviste. Un atlas personal de recuerdos alrededor de un globo interactivo 3D.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

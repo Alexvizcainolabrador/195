@@ -1,0 +1,239 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile representation in 195",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The unique Firebase Auth user identifier",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 256
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of traveler",
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of user profile creation"
+        }
+      },
+      "required": ["userId", "email"]
+    },
+    "Country": {
+      "title": "Country",
+      "description": "A country visited and added to the user's personal world",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "User ID owning this country record",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the country",
+          "maxLength": 100
+        },
+        "code": {
+          "type": "string",
+          "description": "2-letter ISO country code or standard ID",
+          "maxLength": 10
+        },
+        "coverPhoto": {
+          "type": "string",
+          "description": "Cover photo URL or base64 data for the country",
+          "maxLength": 204800
+        },
+        "firstVisitDate": {
+          "type": "string",
+          "description": "Date or year of the first visit",
+          "maxLength": 30
+        },
+        "visitCount": {
+          "type": "number",
+          "description": "Number of visits to this country"
+        }
+      },
+      "required": ["userId", "name", "coverPhoto", "firstVisitDate", "visitCount"]
+    },
+    "City": {
+      "title": "City",
+      "description": "A city visited by the user within a country",
+      "type": "object",
+      "properties": {
+        "countryId": {
+          "type": "string",
+          "description": "ID of the parent country",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "User ID owning this city record",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "City name",
+          "maxLength": 100
+        },
+        "coverPhoto": {
+          "type": "string",
+          "description": "Cover photo URL or base64 data for the city",
+          "maxLength": 204800
+        },
+        "visitDate": {
+          "type": "string",
+          "description": "Date of visit to the city",
+          "maxLength": 30
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal travel notes for this city",
+          "maxLength": 2000
+        },
+        "photos": {
+          "type": "array",
+          "description": "Gallery of photo URLs for this city"
+        }
+      },
+      "required": ["countryId", "userId", "name", "coverPhoto", "visitDate"]
+    },
+    "Place": {
+      "title": "Place",
+      "description": "A specific favorite place, restaurant, beach, or memory in a city",
+      "type": "object",
+      "properties": {
+        "cityId": {
+          "type": "string",
+          "description": "ID of the parent city",
+          "maxLength": 128
+        },
+        "countryId": {
+          "type": "string",
+          "description": "ID of the parent country",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "User ID owning this place",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Place name",
+          "maxLength": 150
+        },
+        "category": {
+          "type": "string",
+          "description": "Category (Restaurante, Cafetería, Hotel, Playa, Mirador, Museo, Bar, Otro)",
+          "maxLength": 50
+        },
+        "address": {
+          "type": "string",
+          "description": "Address or location description",
+          "maxLength": 250
+        },
+        "photos": {
+          "type": "array",
+          "description": "Array of photo URLs"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Personal memory or review",
+          "maxLength": 2000
+        },
+        "worthReturning": {
+          "type": "boolean",
+          "description": "Whether it is worth returning (Merece la pena volver)"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "Marked as favorite place"
+        }
+      },
+      "required": ["cityId", "countryId", "userId", "name", "category", "worthReturning"]
+    },
+    "Snapshot": {
+      "title": "Snapshot",
+      "description": "An audiovisual memory snapshot in a city with audio, photo, people and notes",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Snapshot title or memorable headline",
+          "maxLength": 150
+        },
+        "photoUrl": {
+          "type": "string",
+          "description": "Photo URL or base64 image data",
+          "maxLength": 300000
+        },
+        "audioUrl": {
+          "type": "string",
+          "description": "Optional audio URL or base64 voice recording",
+          "maxLength": 500000
+        },
+        "note": {
+          "type": "string",
+          "description": "Intimate personal memory or note",
+          "maxLength": 4000
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the snapshot",
+          "maxLength": 50
+        },
+        "people": {
+          "type": "array",
+          "description": "List of people present in the snapshot"
+        },
+        "cityId": {
+          "type": "string",
+          "description": "ID of parent city",
+          "maxLength": 128
+        },
+        "countryId": {
+          "type": "string",
+          "description": "ID of parent country",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "ID of user owning this snapshot",
+          "maxLength": 128
+        }
+      },
+      "required": ["title", "photoUrl", "note", "date", "cityId", "countryId", "userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/countries/{countryId}": {
+      "schema": "Country",
+      "description": "Visited countries per user"
+    },
+    "/cities/{cityId}": {
+      "schema": "City",
+      "description": "Visited cities per user and country"
+    },
+    "/places/{placeId}": {
+      "schema": "Place",
+      "description": "Places and memories per city and user"
+    },
+    "/snapshots/{snapshotId}": {
+      "schema": "Snapshot",
+      "description": "Chronological memory snapshots in cities per user"
+    }
+  }
+}
